@@ -1,17 +1,29 @@
 /*
  * Entry point for the STRATUS client. This file sets up the Three.js
- * renderer, defines a few photoréalistic‑inspired scenes and a simple
+ * renderer, defines a few photorealistic‑inspired scenes and a simple
  * flight model, and wires keyboard controls to fly an airplane through
  * the world. It uses plain JavaScript so that it can run directly in
- * the browser without a build step. Three.js is loaded via unpkg.
+ * the browser without a build step. Three.js is bundled locally in
+ * `vendor/three.module.js` to avoid external dependencies.
  */
 
+// Import Three.js from a CDN (unpkg) to avoid bundling vendor files in the
+// repository.  If you wish to pin a specific version, update the version
+// number in the URL below.
 import * as THREE from 'https://unpkg.com/three@0.155.0/build/three.module.js';
 
-// Definitions for each of the photoréalistic scenes. Colours and
+// Definitions for each of the photorealistic scenes. Colours and
 // lighting values were chosen to loosely evoke the mood described in
 // the project brief. Additional assets (heightmaps, textures) can
 // replace the simple colours here without changing the core logic.
+// Scene definitions describing the mood and appearance of each environment.  In
+// addition to the original colour values, each scene now points to a
+// corresponding ground texture.  These textures live in the `assets`
+// subdirectory and were generated to loosely match the descriptions in
+// the project brief (sand dunes, rocky alpine terrain with snow patches and
+// grass, and a coastal beach with water foam).  When loaded, the textures
+// are tiled across the vast ground plane to give the impression of an
+// expansive environment without incurring a heavy memory cost.
 const SCENES = [
   {
     id: 'coast',
@@ -21,6 +33,7 @@ const SCENES = [
     groundColor: 0x47677c,
     ambient: 0x445570,
     directional: 0xffdcb2,
+    groundTexture: 'assets/coast.png',
   },
   {
     id: 'alps',
@@ -30,6 +43,7 @@ const SCENES = [
     groundColor: 0x6d7a8a,
     ambient: 0x586273,
     directional: 0xeef5ff,
+    groundTexture: 'assets/alps.png',
   },
   {
     id: 'desert',
@@ -39,6 +53,7 @@ const SCENES = [
     groundColor: 0xd5a86d,
     ambient: 0x8d6e4a,
     directional: 0xfff1c2,
+    groundTexture: 'assets/desert.png',
   },
 ];
 
@@ -134,7 +149,19 @@ function updateHUD() {
   hud.innerHTML = `Altitude: ${altitude} m | Speed: ${speed} m/s | Throttle: ${throttle}%`;
 }
 
-// Build scene from definition
+// Shared texture loader used to fetch images for ground materials.  It is
+// initialised once and reused each time a new scene is constructed.  The
+// loader will resolve relative URLs based on the location of the running
+// script, so `assets/...` paths point into the `client/assets` directory
+// when served via Render.
+const textureLoader = new THREE.TextureLoader();
+
+// Build scene from definition.  This function resets the global `scene`
+// object and constructs lights, fog, ground and the player airplane.  When
+// a ground texture is specified on the scene definition it will be loaded
+// asynchronously and applied to the ground material.  Until the texture
+// finishes loading the ground will display a fallback solid colour defined
+// by `groundColor`.
 function buildScene(def) {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(def.skyColor);
@@ -149,7 +176,26 @@ function buildScene(def) {
   dirLight.shadow.camera.far = 5000;
   scene.add(dirLight);
   const groundGeo = new THREE.PlaneGeometry(50000, 50000, 1, 1);
-  const groundMat = new THREE.MeshStandardMaterial({ color: def.groundColor, metalness: 0.0, roughness: 1.0 });
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: def.groundColor,
+    metalness: 0.0,
+    roughness: 1.0,
+  });
+  // If a texture is provided for this scene, load it and assign to the
+  // material.  Repeat the texture many times over the large plane to
+  // create the illusion of an expansive surface.  We wrap both S and T
+  // coordinates and adjust the repeat to a high value so details are
+  // visible even at altitude.
+  if (def.groundTexture) {
+    textureLoader.load(def.groundTexture, (tex) => {
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      // Tiling factor chosen empirically; adjust for desired density
+      tex.repeat.set(500, 500);
+      groundMat.map = tex;
+      groundMat.needsUpdate = true;
+    });
+  }
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
