@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STRATUS Flight Demo</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: sans-serif;
+        color: #fdfdfd;
+      }
+      /* Container for the renderer */
+      #app {
+        width: 100vw;
+        height: 100vh;
+      }
+      /* UI overlay for scene selection */
+      #ui {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      #ui label {
+        margin-right: 4px;
+      }
+      #hud {
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.5);
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="ui">
+      <label for="scene-select">Scène:</label>
+      <select id="scene-select"></select>
+    </div>
+    <div id="hud">Altitude: 0 m | Speed: 0 m/s | Throttle: 0%</div>
+    <!-- Charge le script principal en tant que module ES. -->
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>
