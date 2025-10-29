@@ -1,0 +1,10 @@
+{
+  "name": "stratus-server",
+  "version": "1.0.0",
+  "description": "API server for the STRATUS flight demo.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {}
+}
